@@ -6,11 +6,11 @@ function init(){
 
     const scene = new THREE.Scene()
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+    const camera = new THREE.PerspectiveCamera(75, div.offsetWidth / div.offsetHeight, 0.1, 1000)
     scene.add(camera)
 
     const rend = new THREE.WebGLRenderer({canvas});
-    rend.setSize(window.innerWidth, window.innerHeight);
+    rend.setSize(div.offsetWidth, div.offsetHeight);
     rend.outputColorSpace = THREE.SRGBColorSpace
 
     window.addEventListener('resize', () => {
