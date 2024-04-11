@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { FlyControls } from 'three/addons/controls/FlyControls.js';
-import { CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js';
+import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 
 function init(){
     //инициализация объектов, где проходит рендер
@@ -83,11 +83,15 @@ function init(){
     rend.setSize(div.offsetWidth, div.offsetHeight);
     rend.outputColorSpace = THREE.SRGBColorSpace
 
-    const w = document.getElementById("w")
-    const css = new CSS3DRenderer(w)
-    css.setSize(100, 100, 100)
-    // css.position.y = 2
-    scene.add(css)
+    const divv = document.createElement( 'div' );
+    divv.className = 'label';
+    divv.textContent = '1';
+    const label = new CSS3DObject( divv );
+    label.rotation.y = Math.PI * 0;
+    label.position.set(0.5,2,1);
+    label.scale.set(0.02, 0.02, 1);
+
+    scene.add( label );
 
     //изменения если изменился размер окна
     window.addEventListener('resize', () => {
@@ -137,6 +141,7 @@ function init(){
         // camera.position.x = Math.cos(angle * 180/Math.PI) + cube.position.x
         // camera.position.z = 3 * Math.sin(angle * 180/Math.PI) + cube.position.z
         // camera.position.z += 3
+        // label.render( scene, camera)
         requestAnimationFrame(update)
         rend.render(scene, camera)
         // controls.update()
