@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-
+import { CSS2DRenderer, CSS2DObject } from 'https://threejs.org/examples/jsm/renderers/CSS2DRenderer.js';
 function init(){
     //инициализация объектов, где проходит рендер
     const div = document.getElementById("content")
@@ -29,7 +28,7 @@ function init(){
     scene.add(floor)
 
     //добавление света
-    const alight = new THREE.AmbientLight(0xFFFFFF, 1.5)
+    const alight = new THREE.AmbientLight(0xFFFFFF, 2)
     scene.add(alight)
 
     const light1 = new THREE.PointLight(0xd6fffb, 5)
@@ -60,6 +59,10 @@ function init(){
     let mix
 
     let char
+    let mixer_char
+    let char_anim
+
+    let elements = []
     loader.load(
         '/assets/char/main.glb',
         function (gltf){
@@ -71,6 +74,12 @@ function init(){
                     n.castShadow = true
                 }
             })
+            const model = char.children[0];
+            const clip = THREE.AnimationClip.findByName(gltf.animations, 'walk_MAIN');
+            mixer_char = new THREE.AnimationMixer(model);
+            char_anim = mixer_char.clipAction(clip);
+            char_anim.play()
+            char_anim.paused = true
         }
     )
     
@@ -79,7 +88,6 @@ function init(){
         '/assets/hat/hat.glb',
         function (gltf){
             hat = gltf.scene
-            console.log(hat)
             hat.position.z = -7
             hat.position.y = -0.5
             scene.add(hat)
@@ -98,25 +106,7 @@ function init(){
         function (gltf){
             const obj = gltf.scene
             obj.position.z = -7
-            scene.add(obj)
-            obj.traverse(function(n) {
-                if(n.isMesh){
-                    n.castShadow = true
-                }
-            })
-            mix = new THREE.AnimationMixer(obj)
-            obj.children[0].children[0].animations.push(mix.clipAction(gltf.animations[0]))
-            mixers.push(mix)
-        }
-    )
-    loader.load(
-        '/assets/ux_2/main.glb',
-        function (gltf){
-            const obj = gltf.scene
-            obj.position.x = 1.2
-            obj.position.z = -1.3
-            obj.position.y = 0.1
-            obj.rotation.y = Math.PI
+            obj.rotation.y = 0.5 * Math.PI
             scene.add(obj)
             obj.traverse(function(n) {
                 if(n.isMesh){
@@ -130,15 +120,55 @@ function init(){
             action.loop = THREE.LoopOnce
             mixers.push(mix)
             model.children[0].animations.push(action)
-            // action.play();
+
+            const el = document.createElement('html')
+            el.innerHTML = 'нажмите, чтобы примерить шляпу'
+            el.visibility = false
+            const objectCSS = new CSS2DObject(el)
+            objectCSS.position.set(0, 1, 0)
+            obj.add(objectCSS)
+            elements.push(el) //0
         }
     )
-        console.log(mixers)
+    loader.load(
+        '/assets/ux_2/main.glb',
+        function (gltf){
+            const obj = gltf.scene
+            obj.position.x = 1.6
+            obj.position.z = -1.3
+            obj.position.y = 0.1
+            obj.rotation.y = Math.PI
+            scene.add(obj)
+            obj.traverse(function(n) {
+                if(n.isMesh){
+                    n.castShadow = true
+                }
+            })
+            const model = obj.children[0];
+            model.children[0].htmlEL = []
+            const clip = gltf.animations[0];
+            mix = new THREE.AnimationMixer(model);
+            const action = mix.clipAction(clip);
+            action.loop = THREE.LoopOnce
+            mixers.push(mix)
+            model.children[0].animations.push(action)
+            model.children[0].name = 'aa'
+            // action.play();
+            const el = document.createElement('img')
+            el.src = '/assets/photo.jpg'
+            el.width = 200
+            const objectCSS = new CSS2DObject(el)
+            objectCSS.position.set(0, 1, -2)
+            obj.add(objectCSS)
+            model.children[0].htmlEL.push(el)
+            elements.push(el) //1
+        }
+    )
     loader.load(
         '/assets/ux_3/main.glb',
         function (gltf){
             const obj = gltf.scene
-            obj.position.x = -1.8
+            obj.position.x = -3
             obj.position.z = -2.5
             obj.position.y = 0.4
             obj.rotation.y = 1.5 *  Math.PI
@@ -148,8 +178,55 @@ function init(){
                     n.castShadow = true
                 }
             })
+            const model = obj.children[0];
+            const clip = gltf.animations[0];
+            mix = new THREE.AnimationMixer(model);
+            const action = mix.clipAction(clip);
+            action.loop = THREE.LoopOnce
+            mixers.push(mix)
+            model.children[0].animations.push(action)
+            model.children[0].htmlEl = []
+            
         }
     )
+
+    const el = document.createElement('div')
+    el.innerHTML = 'Почему сейчас так активно развивается виртуальная одежда?<br/>©Сейчас развиваются все цифровые технологии, и сфера<br/> одежды в том числе. Активнее всего она стала развиваться во время пандемии, <br/>когда мы перешли в онлайн и нужно было как-то продавать свою <br/>одежду. Поэтому многие бренды поняли, что нужно создавать <br/>виртуальные копии своих изделий и уже работать с ними,<br/> использовать для продуктов своего бренда.'
+    el.width = 200
+    const objectCSS = new CSS2DObject(el)
+    objectCSS.position.set(-3, 0, 0)
+    scene.add(objectCSS)
+    
+    const norm = new THREE.TextureLoader().load('/assets/normal.jpg' );
+    
+    const geometry1 = new THREE.CylinderGeometry( 0.2, 0.2, 3, 12 );
+    const material1 = new THREE.MeshStandardMaterial( { color: 0x6b9080, normalMap: norm } );
+    const sh1 = new THREE.Mesh( geometry1, material1 );
+    sh1.position.set(-2, 2, 1)
+    sh1.rotation.set(1, 0.5, 3)
+    scene.add( sh1 );
+    
+    const geometry2 = new THREE.CylinderGeometry( 0.2, 0.2, 3, 12 );
+    const material2 = new THREE.MeshStandardMaterial( { color: 0x6b9080, normalMap: norm } );
+    const sh2 = new THREE.Mesh( geometry2, material2 );
+    sh2.position.set(2, 2, -5)
+    sh2.rotation.set(3, 1, 2)
+    scene.add( sh2 );
+
+    const listener = new THREE.AudioListener();
+    camera.add( listener );
+
+    // create a global audio source
+    const sound = new THREE.Audio( listener );
+
+    // load a sound and set it as the Audio object's buffer
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load( 'sounds/ambient.ogg', function( buffer ) {
+        sound.setBuffer( buffer );
+        sound.setLoop( true );
+        sound.setVolume( 0.5 );
+        sound.play();
+    });
 
     //рендер для сцены
     const rend = new THREE.WebGLRenderer({canvas});
@@ -161,33 +238,36 @@ function init(){
     labelRenderer.setSize( div.offsetWidth, div.offsetHeight );
     labelRenderer.domElement.style.position = 'absolute';
     labelRenderer.domElement.style.top = '0px';
-    document.body.appendChild( labelRenderer.domElement );
-
-    const el = document.createElement('div')
-    el.innerHTML = 'hello world'
-    const objectCSS = new CSS2DObject(el)
-    objectCSS.position.set(0, 0, 0)
-    scene.add(objectCSS)
+    document.body.appendChild( labelRenderer.domElement )
     
     //изменения если изменился размер окна
     window.addEventListener('resize', () => {
         camera.aspect = div.offsetWidth / div.offsetHeight;
         camera.updateProjectionMatrix();
         rend.setSize(div.offsetWidth, div.offsetHeight);
+        labelRenderer.setSize( div.offsetWidth, div.offsetHeight );
     })
 
     window.addEventListener('keydown', function(event){
         if (event.code === 'KeyW'){
-            char.position.z -= 0.05
-            camera.position.z -= 0.05
+            char.position.z -= 0.1
+            camera.position.z -= 0.1
             char.rotation.y = Math.PI
+            char_anim.paused = false
         }
         if (event.code === 'KeyS'){
-            char.position.z += 0.05
-            camera.position.z += 0.05
+            
+            char.position.z += 0.1
+            camera.position.z += 0.1
             char.rotation.y = 0
+            char_anim.paused = false
         }
     })
+
+    window.addEventListener('keyup', function(event){
+        char_anim.paused = true
+    }
+    )
 
     //вращение камеры
     const pointer = new THREE.Vector2()
@@ -205,7 +285,6 @@ function init(){
         const intersects = raycaster.intersectObjects( scene.children );
 
         for ( let i = 0; i < intersects.length; i ++ ) {
-            console.log(intersects[i])
             if (intersects[i].object.name === "hat_l"){
                 ishatOn = true
             }
@@ -214,6 +293,27 @@ function init(){
                     intersects[i].object.animations[0].reset()
                 }
                 intersects[i].object.animations[0].play()
+            }
+            if (intersects[i].object.name === "aa"){
+                const el = document.createElement('div')
+                el.innerHTML = 'Что такое виртуальная примерочная?<br/>Виртуальная примерочная - это цифровой вид<br/>примерочной в магазине, которая помогает с выбором одежды,<br/> не выходя из дома.'
+                const objectCSS = new CSS2DObject(el)
+                objectCSS.position.set(0, 1, -2)
+                intersects[i].object.add(objectCSS)
+            }
+            if (intersects[i].object.name === "Cube"){
+                const el = document.createElement('img')
+                el.src = '/assets/QR.jpg'
+                el.width = 200
+                const objectCSS = new CSS2DObject(el)
+                objectCSS.position.set(-3, 1, 0)
+                intersects[i].object.add(objectCSS)
+                const el1 = document.createElement('p')
+                el1.innerHTML = 'QR код для скачивания нашего приложения'
+                el1.width = 200
+                const objectCSS1 = new CSS2DObject(el1)
+                objectCSS1.position.set(-3, -1, 0)
+                intersects[i].object.add(objectCSS1)
             }
             }
     })
@@ -250,6 +350,7 @@ function init(){
         for (let i = 0; i < mixers.length; i++){
             if (mixers[i]) mixers[i].update(delta)
         }
+        if (mixer_char) mixer_char.update(delta)
         requestAnimationFrame(update)
         rend.render(scene, camera)
         labelRenderer.render( scene, camera )
