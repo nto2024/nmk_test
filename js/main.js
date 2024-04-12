@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 function init(){
     //инициализация объектов, где проходит рендер
@@ -10,6 +10,7 @@ function init(){
 
     //инициализация сцены и камеры
     const scene = new THREE.Scene()
+    scene.background = new THREE.Color(0xCCE3DE)
 
     const camera = new THREE.PerspectiveCamera(75, div.offsetWidth / div.offsetHeight, 0.1, 1000)
     camera.position.y = 3;
@@ -55,6 +56,9 @@ function init(){
     //подгрузка моделей
     const loader = new GLTFLoader()
 
+    let mixers = []
+    let mix
+
     let char
     loader.load(
         '/assets/char/main.glb',
@@ -69,11 +73,13 @@ function init(){
             })
         }
     )
+    
     let hat
     loader.load(
         '/assets/hat/hat.glb',
         function (gltf){
             hat = gltf.scene
+            console.log(hat)
             hat.position.z = -7
             hat.position.y = -0.5
             scene.add(hat)
@@ -82,7 +88,9 @@ function init(){
                     n.castShadow = true
                 }
             })
+            
         }
+        
     )
 
     loader.load(
@@ -96,9 +104,11 @@ function init(){
                     n.castShadow = true
                 }
             })
+            mix = new THREE.AnimationMixer(obj)
+            obj.children[0].children[0].animations.push(mix.clipAction(gltf.animations[0]))
+            mixers.push(mix)
         }
     )
-
     loader.load(
         '/assets/ux_2/main.glb',
         function (gltf){
@@ -113,9 +123,17 @@ function init(){
                     n.castShadow = true
                 }
             })
+            const model = obj.children[0];
+            const clip = gltf.animations[0];
+            mix = new THREE.AnimationMixer(model);
+            const action = mix.clipAction(clip);
+            action.loop = THREE.LoopOnce
+            mixers.push(mix)
+            model.children[0].animations.push(action)
+            // action.play();
         }
     )
-
+        console.log(mixers)
     loader.load(
         '/assets/ux_3/main.glb',
         function (gltf){
@@ -139,7 +157,18 @@ function init(){
     rend.outputColorSpace = THREE.SRGBColorSpace
     rend.shadowMap.enabled = true
 
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize( div.offsetWidth, div.offsetHeight );
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    document.body.appendChild( labelRenderer.domElement );
 
+    const el = document.createElement('div')
+    el.innerHTML = 'hello world'
+    const objectCSS = new CSS2DObject(el)
+    objectCSS.position.set(0, 0, 0)
+    scene.add(objectCSS)
+    
     //изменения если изменился размер окна
     window.addEventListener('resize', () => {
         camera.aspect = div.offsetWidth / div.offsetHeight;
@@ -151,12 +180,12 @@ function init(){
         if (event.code === 'KeyW'){
             char.position.z -= 0.05
             camera.position.z -= 0.05
-            char.rotation.y = -Math.PI
+            char.rotation.y = Math.PI
         }
         if (event.code === 'KeyS'){
             char.position.z += 0.05
             camera.position.z += 0.05
-            char.rotation.y = Math.PI
+            char.rotation.y = 0
         }
     })
 
@@ -175,13 +204,20 @@ function init(){
         raycaster.setFromCamera( pointer, camera );
         const intersects = raycaster.intersectObjects( scene.children );
 
-        for ( let i = 0; i < intersects.length; i ++ ) {w
+        for ( let i = 0; i < intersects.length; i ++ ) {
+            console.log(intersects[i])
             if (intersects[i].object.name === "hat_l"){
                 ishatOn = true
             }
-        }
+            else if (intersects[i].object.animations[0]){
+                if (intersects[i].object.animations[0].enabled === false ){
+                    intersects[i].object.animations[0].reset()
+                }
+                intersects[i].object.animations[0].play()
+            }
+            }
     })
-
+    const clock = new THREE.Clock() 
     //покадровое обновление
     function update(){
         //вращение камеры
@@ -199,6 +235,7 @@ function init(){
                 camera.position.y = 2 * Math.cos(angleY * Math.PI/180) + char.position.y
                 
             }
+            // console.log(char)
         }
         catch (e){
             console.log()
@@ -209,8 +246,13 @@ function init(){
             hat.position.y = char.position.y - 0.06
             hat.position.z = char.position.z + 0.03
         }
+        const delta = clock.getDelta()
+        for (let i = 0; i < mixers.length; i++){
+            if (mixers[i]) mixers[i].update(delta)
+        }
         requestAnimationFrame(update)
         rend.render(scene, camera)
+        labelRenderer.render( scene, camera )
     }
 
     update()
