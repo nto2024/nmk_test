@@ -83,6 +83,7 @@ function init(){
         }
     )
     
+    
     let hat
     loader.load(
         '/assets/hat/hat.glb',
@@ -221,7 +222,7 @@ function init(){
 
     // load a sound and set it as the Audio object's buffer
     const audioLoader = new THREE.AudioLoader();
-    audioLoader.load( 'sounds/ambient.ogg', function( buffer ) {
+    audioLoader.load( 'assets/music.mp3', function( buffer ) {
         sound.setBuffer( buffer );
         sound.setLoop( true );
         sound.setVolume( 0.5 );
@@ -248,24 +249,25 @@ function init(){
         labelRenderer.setSize( div.offsetWidth, div.offsetHeight );
     })
 
+    let forward = false, backward = false
     window.addEventListener('keydown', function(event){
+        console.log(char)
         if (event.code === 'KeyW'){
-            char.position.z -= 0.1
-            camera.position.z -= 0.1
-            char.rotation.y = Math.PI
-            char_anim.paused = false
+            forward = true
         }
         if (event.code === 'KeyS'){
-            
-            char.position.z += 0.1
-            camera.position.z += 0.1
-            char.rotation.y = 0
-            char_anim.paused = false
+            backward = true
         }
     })
 
     window.addEventListener('keyup', function(event){
         char_anim.paused = true
+        if (event.code === 'KeyW'){
+            forward = false
+        }
+        if (event.code === 'KeyS'){
+            backward = false
+        }
     }
     )
 
@@ -341,14 +343,27 @@ function init(){
             console.log()
         }
         //проверка надета ли шляпа
+        
+        const delta = clock.getDelta()
+        for (let i = 0; i < mixers.length; i++){
+            if (mixers[i]) mixers[i].update(delta)
+        }
+        if (forward){
+            char.position.z -= 0.05
+            camera.position.z -= 0.05
+            char.rotation.y = Math.PI
+            char_anim.paused = false
+        }
+        else if (backward){
+            char.position.z += 0.05
+            camera.position.z += 0.05
+            char.rotation.y = 0
+            char_anim.paused = false
+        }
         if (ishatOn){
             hat.position.x = char.position.x
             hat.position.y = char.position.y - 0.06
             hat.position.z = char.position.z + 0.03
-        }
-        const delta = clock.getDelta()
-        for (let i = 0; i < mixers.length; i++){
-            if (mixers[i]) mixers[i].update(delta)
         }
         if (mixer_char) mixer_char.update(delta)
         requestAnimationFrame(update)
